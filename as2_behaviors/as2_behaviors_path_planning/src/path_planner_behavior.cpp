@@ -88,6 +88,11 @@ PathPlannerBehavior::PathPlannerBehavior(const rclcpp::NodeOptions & options)
 bool PathPlannerBehavior::on_activate(
   std::shared_ptr<const as2_msgs::action::NavigateToPoint::Goal> goal)
 {
+  follow_path_succeeded_ = false;
+  follow_path_feedback_.reset();
+  follow_path_rejected_ = false;
+  navigation_aborted_ = false;
+
   bool ret = path_planner_plugin_->on_activate(drone_pose_, *goal);
   if (!ret) {
     return false;
@@ -116,7 +121,6 @@ bool PathPlannerBehavior::on_activate(
     as2_msgs::msg::PoseWithID pid = as2_msgs::msg::PoseWithID();
     pid.id = std::to_string(i);
     pid.pose.position = p;
-    pid.pose.position.z = 1.0;
     goal_msg.path.push_back(pid);
     i++;
   }
