@@ -537,7 +537,9 @@ void Plugin::setupTfTree()
 
   if (!map_to_odom_set_) {
     geometry_msgs::msg::PoseWithCovariance map_to_odom = generateIdentityPose();
-    state_estimator_interface_->setMapToOdomPose(map_to_odom, node_ptr_->now(), true);
+    // Dynamic like every later update: a static identity would stay latched on /tf_static and
+    // TF buffers would return it instead of the corrected transform.
+    state_estimator_interface_->setMapToOdomPose(map_to_odom, node_ptr_->now(), false);
     map_to_odom_set_ = true;
   }
 }
@@ -936,6 +938,13 @@ void Plugin::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg)
   }
   if (earth_to_map_set_) {
     processImu(*msg);
+
+    // Only track the timestamp of messages that were actually fed into the EKF.
+    // If we updated last_imu_msg_ unconditionally, messages received before
+    // earth_to_map is set would create a huge dt on the first real prediction.
+    // Stored before updateStateFromEkf(), which publishes this message's angular velocity.
+    last_imu_msg_ = *msg;
+
     updateStateFromEkf();
     publishState();
 
@@ -960,11 +969,6 @@ void Plugin::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg)
         covariance.data[ekf::Covariance::PITCH],
         covariance.data[ekf::Covariance::YAW]);
     }
-
-    // Only track the timestamp of messages that were actually fed into the EKF.
-    // If we updated last_imu_msg_ unconditionally, messages received before
-    // earth_to_map is set would create a huge dt on the first real prediction.
-    last_imu_msg_ = *msg;
   }
 }
 
