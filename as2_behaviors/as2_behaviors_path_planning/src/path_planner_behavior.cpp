@@ -205,6 +205,11 @@ as2_behavior::ExecutionStatus PathPlannerBehavior::on_run(
     return as2_behavior::ExecutionStatus::FAILURE;
   }
 
+  if (follow_path_succeeded_) {
+    result_msg->success = true;
+    return as2_behavior::ExecutionStatus::SUCCESS;
+  }
+
   // TODO(pariaspe): current feedback is just a template
   if (!follow_path_feedback_) {
     RCLCPP_INFO(this->get_logger(), "Waiting for feedback from FollowPath behavior");
@@ -216,10 +221,6 @@ as2_behavior::ExecutionStatus PathPlannerBehavior::on_run(
   // feedback_msg->estimated_time_remaining = -1;
   // feedback_msg->navigation_time = -1;
 
-  if (follow_path_succeeded_) {
-    result_msg->success = true;
-    return as2_behavior::ExecutionStatus::SUCCESS;
-  }
   return as2_behavior::ExecutionStatus::RUNNING;
 }
 
